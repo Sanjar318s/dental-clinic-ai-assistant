@@ -1,0 +1,750 @@
+/* ============================================================
+   Раскладка секций. Контентный слой: стекла здесь нет.
+   ============================================================ */
+
+/* Приподнятая секция — полупрозрачная вуаль, а не сплошная заливка:
+   фактура girih под страницей просвечивает и здесь. По тону это тот же
+   --surface-raised: 4% цвета текста поверх фона. */
+.section--raised { background: color-mix(in srgb, var(--content) 4%, transparent); }
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--glaze);
+}
+
+/* ---------------- Шапка ---------------- */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  border-inline: none;
+  border-top: none;
+}
+
+.header__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  min-height: 64px;
+}
+
+/* Шапка «садится» за первые 96px прокрутки: ниже на 8px, стекло
+   плотнее, снизу мягкая тень — как навигация в iOS, которая из
+   прозрачной над заголовком становится панелью над контентом.
+   Высоту полосы шапка отдаёт в нижний отступ, поэтому общий поток не
+   меняется и текст под ней не дёргается. --glass-fill зарегистрирован
+   как процент, иначе браузер не смог бы его плавно интерполировать. */
+@property --glass-fill {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 72%;
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .header,
+    .header__bar {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 96px;
+    }
+    .header { animation-name: header-settle; }
+    .header__bar { animation-name: header-condense; }
+  }
+}
+
+@keyframes header-settle {
+  to {
+    --glass-fill: 84%;
+    margin-bottom: 8px;
+    box-shadow: 0 10px 28px -18px color-mix(in srgb, var(--content) 45%, transparent);
+  }
+}
+@keyframes header-condense {
+  to { min-height: 56px; }
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--tap);
+  color: var(--content);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+.brand__mark { width: 30px; height: 30px; }
+.brand__tile { fill: var(--accent); }
+.brand__star {
+  fill: none;
+  stroke: #7fe8da;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.nav { margin-inline: auto; }
+.nav__list { display: flex; gap: var(--s-1); }
+.nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  border-radius: var(--r-pill);
+  color: var(--content);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.nav__link:hover { background: color-mix(in srgb, var(--content) 6%, transparent); }
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.header__cta {
+  min-height: 38px;
+  padding-inline: var(--s-4);
+  font-size: 0.9375rem;
+}
+
+.header__burger {
+  display: none;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--r-pill);
+  color: var(--content);
+}
+
+/* Сегментированный контрол (.seg) — в base.css: им пользуется и админка. */
+
+/* На десктопе меню — это строка ссылок, кнопка записи стоит в шапке.
+   Правило должно стоять ДО медиа-запроса: при равной специфичности
+   выигрывает то, что ниже. */
+.nav__cta { display: none; }
+
+/* Оформление живёт в шапке только на десктопе: на узком экране
+   рядом с языком и бургером для него нет честного места, поэтому
+   он уезжает в меню строкой с подписями. */
+.nav__extra { display: none; }
+
+@media (max-width: 56rem) {
+  .header__burger { display: grid; }
+  .header__cta { display: none; }
+  .header__actions { margin-left: auto; }
+  .header__theme { display: none; }
+
+  .nav__extra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3);
+    margin-top: var(--s-3);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
+  }
+  .nav__extra-label {
+    font-size: var(--text-caption);
+    color: var(--content-secondary);
+  }
+  .nav__extra .seg { flex: 1; }
+  .nav__extra .seg__opt { flex: 1; }
+
+  .nav {
+    position: absolute;
+    top: 100%;
+    inset-inline: 0;
+    margin: 0;
+    padding: var(--s-2) var(--gutter) var(--s-4);
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
+    box-shadow: var(--shadow-card);
+    display: none;
+  }
+  .nav[data-open='true'] { display: block; }
+
+  /* Четыре коротких пункта в одну колонку тратили высоту на пустоту
+     справа. Сетка 2x2 отдаёт ту же навигацию вдвое ниже и читается
+     как осознанная раскладка, а не как сжатый список. */
+  .nav__list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-1);
+  }
+  .nav__link {
+    width: 100%;
+    /* 44px — минимум цели нажатия, ниже опускаться нельзя. */
+    min-height: var(--tap);
+    justify-content: flex-start;
+    font-size: var(--text-body);
+    border-radius: var(--r-sm);
+    background: var(--surface-raised);
+  }
+
+  /* Главное действие в открытом меню: .header__cta на узком экране
+     скрыт, и до этой кнопки записаться из меню было нельзя. */
+  .nav__cta {
+    display: flex;
+    width: 100%;
+    margin-top: var(--s-3);
+  }
+
+  .nav__extra {
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+  }
+}
+
+/* ---------------- Герой ---------------- */
+.hero {
+  position: relative;
+  isolation: isolate;
+  /* Шапка липкая и прозрачная: узор героя уходит под неё уже в покое. */
+  margin-top: -64px;
+  padding-top: calc(64px + var(--s-9));
+  padding-bottom: var(--s-9);
+  overflow: hidden;
+}
+
+/* Загрузка: строки героя поднимаются по очереди, сверху вниз —
+   так читают и глаза. Всё укладывается в ~1 с, вместе с волной узора
+   и прорисовкой коронки: один поставленный момент, а не три. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero__copy > .eyebrow,
+  .hero__line,
+  .hero__lede,
+  .hero__ctas,
+  .trust {
+    animation: rise 700ms var(--ease-out) both;
+  }
+  .hero__copy > .eyebrow { animation-delay: 60ms; }
+  .hero__line:nth-child(1) { animation-delay: 140ms; }
+  .hero__line:nth-child(2) { animation-delay: 220ms; }
+  .hero__line:nth-child(n + 3) { animation-delay: 300ms; }
+  .hero__lede { animation-delay: 400ms; }
+  .hero__ctas { animation-delay: 480ms; }
+  .trust { animation-delay: 560ms; }
+}
+
+/* Третий слой параллакса: текст не смещается, но к концу экрана
+   мягко уходит. Неподвижная опора, относительно которой видно, что
+   фон отстаёт, а иллюстрация обгоняет. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__copy {
+      animation: hero-recede linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 30vh 100vh;
+    }
+  }
+}
+
+@keyframes hero-recede {
+  to { opacity: 0.55; }
+}
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  align-items: center;
+  gap: clamp(var(--s-7), 5vw, var(--s-9));
+}
+
+.hero__title {
+  margin-top: var(--s-4);
+  font-size: var(--text-display-xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-xl);
+  line-height: 1.02;
+}
+.hero__line { display: block; }
+/* Последняя строка — вывод заголовка, в цвете кобальта. Крупный кегль,
+   поэтому 5.9:1 с запасом. */
+.hero__line:last-child { color: var(--accent); }
+
+.hero__lede {
+  margin-top: var(--s-5);
+  max-width: 36rem;
+  font-size: var(--text-subtitle);
+  color: var(--content-secondary);
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+
+.btn--lg {
+  min-height: 52px;
+  padding-inline: var(--s-6);
+  font-size: var(--text-body);
+}
+.btn--quiet.btn--lg { padding-inline: var(--s-4); }
+
+.trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-7);
+  font-size: var(--text-caption);
+  color: var(--content-secondary);
+}
+.trust__item { display: inline-flex; align-items: center; gap: var(--s-2); }
+.trust__status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--glaze);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glaze) 22%, transparent);
+}
+.trust__star { color: var(--accent); fill: currentColor; }
+
+.hero__art {
+  display: flex;
+  justify-content: center;
+}
+.crown {
+  width: 100%;
+  max-width: clamp(300px, 28vw, 440px);
+  height: auto;
+  filter: drop-shadow(0 24px 40px color-mix(in srgb, var(--accent) 18%, transparent));
+}
+
+@media (max-width: 56rem) {
+  .hero {
+    padding-top: calc(64px + var(--s-7));
+    padding-bottom: var(--s-8);
+  }
+  .hero__grid { grid-template-columns: 1fr; gap: var(--s-6); }
+  .hero__art { order: -1; justify-content: flex-start; }
+  .crown { max-width: 180px; }
+}
+
+@media (max-width: 30rem) {
+  .hero__ctas { flex-direction: column; align-items: stretch; }
+  .hero__ctas .btn { width: 100%; }
+}
+
+/* ---------------- Услуги ---------------- */
+/* Шесть карточек: 3 × 2 на десктопе, 2 × 3 на планшете, столбик на
+   телефоне. Колонка не уже трети ряда, поэтому четвёртой не бывает
+   даже в широкой полосе: иначе остался бы «хвост» из двух карточек. */
+.services {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(300px, (100% - 2 * var(--s-4)) / 3)), 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-7);
+}
+
+.service {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-5);
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) {
+  .service:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-float);
+  }
+}
+
+/* Плашка иконки — маленький «изразец»: кобальт на светлой глазури. */
+.service__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, var(--accent-sunken), color-mix(in srgb, var(--glaze) 14%, var(--surface)));
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.service__name {
+  margin-top: var(--s-4);
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: var(--tracking-title);
+}
+
+.service__benefit {
+  margin-top: var(--s-2);
+  flex: 1;
+  color: var(--content-secondary);
+}
+
+.service__price {
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--hairline);
+  font-size: var(--text-caption);
+  color: var(--content-secondary);
+}
+.service__amount {
+  font-size: 1.25rem;
+  font-weight: 650;
+  color: var(--content);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.services__note {
+  margin-top: var(--s-5);
+  max-width: var(--measure-text);
+  font-size: var(--text-caption);
+  color: var(--content-secondary);
+}
+
+/* ---------------- О клинике ---------------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-7);
+}
+.stats__item {
+  display: flex;
+  flex-direction: column-reverse; /* визуально значение сверху, в DOM — dt перед dd */
+  padding: var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+}
+.stats__value {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: var(--tracking-l);
+  line-height: 1.1;
+  color: var(--content);
+}
+.stats__label {
+  margin-top: var(--s-2);
+  font-size: var(--text-caption);
+  color: var(--content-secondary);
+}
+@media (max-width: 48rem) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.about__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--s-7);
+  margin-top: var(--s-8);
+  align-items: start;
+}
+.about__body p { max-width: var(--measure-text); }
+.about__body p + p { margin-top: var(--s-4); }
+
+.craft {
+  padding: var(--s-6);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+}
+.craft__tile { width: 56px; height: 56px; }
+.craft__bg { fill: var(--accent); }
+.craft__star rect {
+  fill: none;
+  stroke: #7fe8da;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.craft__core { fill: #7fe8da; }
+.craft__title {
+  margin-top: var(--s-4);
+  font-size: var(--text-title);
+  letter-spacing: var(--tracking-title);
+}
+.craft__body {
+  margin-top: var(--s-3);
+  color: var(--content-secondary);
+}
+
+@media (max-width: 56rem) {
+  .about__cols { grid-template-columns: 1fr; gap: var(--s-6); }
+}
+
+/* ---------------- FAQ ---------------- */
+.faq-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: var(--s-8);
+  align-items: start;
+}
+.faq-layout__intro { position: sticky; top: 6rem; }
+@media (max-width: 56rem) {
+  .faq-layout { grid-template-columns: 1fr; gap: var(--s-6); }
+  .faq-layout__intro { position: static; }
+}
+
+.faq { border-top: 1px solid var(--hairline); }
+.faq__item { border-bottom: 1px solid var(--hairline); }
+
+.faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  min-height: 64px;
+  padding: var(--s-4) 0;
+  font-size: var(--text-subtitle);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  list-style: none;
+}
+.faq__q::-webkit-details-marker { display: none; }
+.faq__q:hover { color: var(--accent); }
+
+.faq__chevron {
+  flex: none;
+  color: var(--content-secondary);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.faq__item[open] .faq__chevron { transform: rotate(180deg); }
+
+.faq__a {
+  padding-bottom: var(--s-5);
+  padding-right: var(--s-7);
+  color: var(--content-secondary);
+}
+
+/* Ответ раскрывается по высоте, а не появляется скачком. Раньше
+   высоту до auto анимировали только через JS или max-height; теперь
+   interpolate-size разрешает переход к auto, а ::details-content даёт
+   доступ к той части <details>, которая прячется. Закрытие тоже
+   плавное: content-visibility с allow-discrete держит ответ видимым,
+   пока высота не дойдёт до нуля. Где этого нет — открывается сразу,
+   как раньше. Вопросы связаны name="faq": открытый ответ сворачивается,
+   пока раскрывается новый, — оба движения одновременно. */
+@supports (interpolate-size: allow-keywords) {
+  @media (prefers-reduced-motion: no-preference) {
+    .faq { interpolate-size: allow-keywords; }
+    .faq__item::details-content {
+      block-size: 0;
+      overflow-y: clip;
+      transition:
+        block-size var(--dur-slow) var(--ease-out),
+        content-visibility var(--dur-slow) allow-discrete;
+    }
+    .faq__item[open]::details-content { block-size: auto; }
+    /* Текст ответа проявляется чуть позже, чем начинает расти высота.
+       Анимация, а не transition: пока <details> закрыт, браузер не
+       считает стили его содержимого, и переходу не от чего стартовать. */
+    .faq__item[open] .faq__a {
+      animation: faq-answer-in var(--dur-base) var(--ease-out) 80ms both;
+    }
+  }
+}
+
+@keyframes faq-answer-in {
+  from { opacity: 0; }
+}
+
+/* ---------------- Контакты ---------------- */
+.contacts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-6);
+  margin-top: var(--s-7);
+  align-items: start;
+}
+@media (max-width: 56rem) {
+  .contacts { grid-template-columns: 1fr; }
+}
+
+.contact-list { display: grid; gap: var(--s-4); }
+.contact-list__row dt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--content-secondary);
+}
+.contact-list__row dt svg { color: var(--accent); }
+.contact-list__row dd {
+  margin-top: var(--s-1);
+  padding-left: 28px;
+  font-size: var(--text-subtitle);
+}
+.contact-list__row dd a {
+  color: var(--content);
+  text-decoration: none;
+  font-weight: 600;
+}
+.contact-list__row dd a:hover { color: var(--accent); }
+
+.map {
+  display: block;
+  margin-top: var(--s-6);
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--content);
+}
+.map__svg { width: 100%; height: auto; }
+.map__ground { fill: var(--surface-sunken); }
+.map__road { stroke: var(--surface); stroke-width: 12; fill: none; }
+.map__road--main { stroke-width: 20; }
+.map__road--minor { stroke-width: 6; }
+.map__block { fill: color-mix(in srgb, var(--content) 7%, var(--surface-sunken)); }
+.map__block--clinic { fill: var(--accent-sunken); stroke: var(--accent); stroke-width: 1.5; }
+.map__pin { fill: var(--accent); stroke: var(--surface); stroke-width: 3; }
+.map__pulse { fill: color-mix(in srgb, var(--accent) 16%, transparent); }
+.map__link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--tap);
+  padding: var(--s-3) var(--s-4);
+  font-weight: 600;
+  color: var(--accent);
+  border-top: 1px solid var(--hairline);
+}
+.map:hover .map__link { background: var(--accent-sunken); }
+
+/* Форма записи */
+.booking {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-6);
+}
+.booking__title {
+  font-size: var(--text-title);
+  letter-spacing: var(--tracking-title);
+}
+
+.field { display: grid; gap: var(--s-2); }
+.field label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--content);
+}
+.field input,
+.field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-size: var(--text-body); /* 17px: iOS не зумит при фокусе */
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.field input::placeholder { color: var(--content-tertiary); }
+.field input:focus-visible,
+.field select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.field input[aria-invalid='true'] {
+  border-color: var(--signal);
+  background: var(--signal-sunken);
+}
+/* Ошибка обозначена не только цветом: есть текст и значок. */
+.field__error {
+  display: flex;
+  gap: var(--s-2);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--signal);
+}
+.field__error::before { content: '⚠'; }
+
+.booking__submit { width: 100%; min-height: 52px; }
+
+.booking__note {
+  font-size: var(--text-caption);
+  color: var(--content-secondary);
+}
+
+.booking__success:empty { display: none; }
+.booking__success {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--glaze) 12%, var(--surface));
+  font-size: var(--text-caption);
+  color: var(--content);
+}
+.booking__success svg { flex: none; color: var(--glaze-deep); margin-top: 1px; }
+
+/* ---------------- Подвал ---------------- */
+.footer {
+  padding-block: var(--s-8) var(--s-6);
+  /* Без заливки: фактура girih доходит до самого низа страницы. */
+  border-top: 1px solid var(--hairline);
+  font-size: var(--text-caption);
+  color: var(--content-secondary);
+}
+
+.footer__grid {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr));
+  gap: var(--s-6);
+}
+@media (max-width: 56rem) {
+  .footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 30rem) {
+  .footer__grid { grid-template-columns: 1fr; }
+}
+
+.footer__name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--content);
+}
+.footer__tagline { margin-top: var(--s-2); }
+
+.footer__heading {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--content);
+  margin-bottom: var(--s-3);
+}
+.footer__col ul { display: grid; gap: var(--s-2); }
+.footer__col p + p { margin-top: var(--s-2); }
+.footer__col a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: var(--content-secondary);
+  text-decoration: none;
+}
+.footer__col a:hover { color: var(--accent); text-decoration: underline; }
+
+/* Изразцовая кайма: мотив girih одной строкой */
+.footer__border {
+  height: 14px;
+  margin-block: var(--s-7) var(--s-5);
+  opacity: 0.55;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 14'%3E%3Cg fill='none' stroke='%230B5FD0' stroke-width='1'%3E%3Crect x='9' y='2' width='10' height='10'/%3E%3Crect x='9' y='2' width='10' height='10' transform='rotate(45 14 7)'/%3E%3Cpath d='M0 7h7.5M20.5 7H28'/%3E%3C/g%3E%3Ccircle cx='14' cy='7' r='2' fill='%2312A594'/%3E%3C/svg%3E")
+    repeat-x left center / 28px 14px;
+}
+
+.footer__copy { color: var(--content-secondary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .service,
+  .faq__chevron { transition: none; }
+  .service:hover { transform: none; }
+}
